@@ -1,0 +1,122 @@
+breed [termites termite]
+patches-own [grãos]
+
+;globals
+;[área-x área-y]
+
+to setup ; Prepara e reinicia a simulação
+ clear-all
+ setup-patches
+ setup-termites
+ reset-ticks
+end
+
+to setup-patches ; Cria os patches(partículas) que poderão ser retirados pelos cupins
+  ask patches [
+    set pcolor green ; Dá a cor verde às partículas
+    set grãos quantidade-de-grãos ; Define quantas vezes um cupim deve "retirar partículas" para que ela seja removida de vez
+  ]
+  draw-free-area
+ fazer-área-de-deposição
+end
+
+to draw-free-area ; Retira as partículas próximas à área em que os cupins vão ser colocados
+  ask patches[
+    if (pycor < 5 and pxcor < 5) and (pycor > -5 and pxcor > -5)[ ; Define a área que não haverá partículas no início da simulação
+      set pcolor black ; Preto = sem partícula
+      ;set grãos 0
+    ]
+  ]
+  ask patches[if (pycor = 0) and (pxcor = 0) [ ; Define o patch inicial
+    set pcolor blue ; Dá cor ao patch inicial
+    set grãos 0 ; Faz com que os cupins não coletem essa partícula
+    ]
+  ]
+end
+
+to fazer-área-de-deposição ; Patch inicial, onde os cupins se iniciam
+
+end
+
+to setup-termites ; Cria os turtles(cupins)
+  create-termites initial-number-of-termites [ ; Cria a quantidade de cupins de acordo com a variável "initial-number-of-termites"
+    set shape "bug" ; Formato dos cupins
+    setxy 0 0 ; Local onde os cupins serão colocados
+    set color blue ; Cor dos cupins
+  ]
+end
+
+to go ; Inicia a simulação
+  ask termites [if color = blue [ ; Ordem para os cupins azuis(sem partícula)
+  Procurar-Grão
+  Coletar-Grão
+    ]
+  ]
+  ask termites [if color = brown [ ; ordem para os cupins marrons(com partícula). Só ocorre na versão "depositar-partículas"
+    Depositar-Grão
+    ]
+  ]
+  tick
+end
+
+to Procurar-Grão ; Movimentação de um cupim sem partícula
+    rt random amplitude ; Grau aleatório para a direita com base na variável amplitude
+    lt random amplitude ; Grau aleatório para a esquerda com base na variável amplitude
+    if ([pcolor] of patch-ahead 1) = black [ ; Se o patch em frente for preto
+      if not any? turtles-on patch-ahead 1[ ; Se o espaço estiver vazio
+         fd 1 ; Andar um patch
+      ]
+    if ([pcolor] of patch-ahead 1) = blue [ ; Se o patch em frente for o inicial
+      if not any? turtles-on patch-ahead 1[ ; Agir normalmente
+        rt random amplitude
+        lt random amplitude
+        fd 1
+      ]
+    ]
+    if any? turtles-on patch-ahead 1 [ ; Se houver um cupim em frente
+      if (random 100) < descongestionamento[ ; Chance de dar um passo para trás
+      fd -1
+      rt random amplitude-de-recuo
+      lt random amplitude-de-recuo
+        if (random 100) > descongestionamento [ ; Chance de andar aleatoriamente
+          lt random 360
+        ]
+      ]
+    ]
+  ]
+end
+
+to Coletar-Grão ; Escavação dos cupins
+  ifelse(random 100) < probabilidade_de_escavar [ ; Probabilidade de escavar
+    ask patch-ahead 1 [ set grãos grãos - 1 ]
+    if ([grãos] of patch-ahead 1) = 0 [ ; Tira grãos até remover o patch
+      ask patch-ahead 1 [set pcolor black]
+      if versão = "depositar-partículas" [ ; Na versão com deposito de grãos
+        set color brown ; Cupim recebe o comportamento de carregar grãos
+      ]
+    ]
+  ] [
+    rt random amplitude
+    lt random amplitude
+    ]
+end
+
+to Depositar-Grão ; Depósito de grãos
+  facexy 0 0 ; Ir em direção ao centro
+  fd 1
+  if any? turtles-on patch-ahead 1 [fd -0.95] ; Parar caso tiver um cupim a frente
+  ifelse ([pcolor] of patch-ahead 1) = black [
+  if (pycor = 0 and pxcor = 0)[ ; Se chegar ao depósito de partículas
+      set color blue
+    fd -1 ; Para ao depositar uma partícula
+    rt random 360
+    ]
+  ]
+   [if ([pcolor] of patch-ahead 1) = green [ ; Eu tentando de forma falha fazer essas pragas irem para alguma direção além do centro
+   rt random amplitude
+   lt random amplitude
+   ]
+  ]
+end
+
+; opção desligar o retorno pro centro durante esc
